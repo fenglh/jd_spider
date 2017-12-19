@@ -14,12 +14,18 @@ from pyspider.database.mysql.MySQLHandle import SQL
 NUMBER_START = 1
 NUMBER_END = 100
 
+##爬取特定的物品
+FLAG_URLS = [
+    {'keyword':'衬衫男','url':'https://search.jd.com/Search?keyword=%E8%A1%AC%E8%A1%AB%E7%94%B7&enc=utf-8&wq=%E8%A1%AC%E8%A1%AB%E7%94%B7&pvid=36aef68ebe994d96a9e92b83c687369f'},
+    {'keyword':'衬衫女','url':'https://search.jd.com/Search?keyword=%E8%A1%AC%E8%A1%AB%E5%A5%B3&enc=utf-8&suggest=1.def.0.V06&wq=%E8%A1%AC%E8%A1%ABnv&pvid=5b3e121c473142bc96fbcc9a4bf9d3b1'},
+    {'keyword':'毛衣男','url':'https://search.jd.com/Search?keyword=%E6%AF%9B%E8%A1%A3%E7%94%B7&enc=utf-8&wq=%E6%AF%9B%E8%A1%A3%E7%94%B7&pvid=1d9323194d04489094c38cfc3e2f63f8'},
+    {'keyword':'毛衣女','url':'https://search.jd.com/Search?keyword=%E6%AF%9B%E8%A1%A3%E5%A5%B3&enc=utf-8&wq=%E6%AF%9B%E8%A1%A3%E5%A5%B3&pvid=ed77e400a4ef4240bff6b342305ddfef'},
+]
+
 
 class Handler(BaseHandler):
 
-    category_urls = [
-        {'url':''},
-    ]
+
     crawl_config = {
         'itag': 'v163', 'connect_timeout':120,
         'headers' : {'Connection':'keep-alive','Accept-Encoding':'gzip, deflate, br','Accept-Language':'zh-CN,zh;q=0.8','content-type':'application/x-www-form-urlencoded','Referer':'http://channel.jd.com/men.html','User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'}
@@ -35,7 +41,7 @@ class Handler(BaseHandler):
         headers['X-Requested-With'] = 'XMLHttpRequest'
         return headers
 
-    def crawl_keyword_url(self, keyword, base_url, callback, cookies, headers):
+    def crawl_keyword_url(self, base_url,keyword, callback, cookies, headers):
         page = NUMBER_START
         while page <= NUMBER_END:
             s = ((page + 1) / 2 - 1) * 60 + 1
@@ -53,12 +59,26 @@ class Handler(BaseHandler):
     @config(age=60 * 60 * 24)
     def category_page(self, response):
 
-        for each in response.doc('.fore3 ul a').items():
-            query = urlparse.urlparse(each.attr.href).query
-            params=  dict([(k,v[0]) for k,v in urlparse.parse_qs(query).items()])
-            referer_url = response.url + '#' + str(time.time())
-            headers = self.get_headers(referer_url)
-            self.crawl_keyword_url(params['keyword'],each.attr.href,self.list_page, response.cookies, headers)
+        flag = True
+
+        if flag:
+            ##从指定列表中爬取
+            for each in FLAG_URLS:
+                url = each['url']
+                keyword = each['keyword']
+                referer_url = response.url + '#' + str(time.time())
+                headers = self.get_headers(referer_url)
+                self.crawl_keyword_url(url, keyword, self.list_page, response.cookies, headers)
+        else:
+            ##从分类中获取关键字和url进行爬取
+            for each in response.doc('.fore3 ul a').items():
+                query = urlparse.urlparse(each.attr.href).query
+                params=  dict([(k,v[0]) for k,v in urlparse.parse_qs(query).items()])
+                referer_url = response.url + '#' + str(time.time())
+                headers = self.get_headers(referer_url)
+                self.crawl_keyword_url(each.attr.href, params['keyword'],self.list_page, response.cookies, headers)
+
+
 
 
     def list_page(self, response):
