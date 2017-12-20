@@ -44,11 +44,12 @@ class Handler(BaseHandler):
     def crawl_keyword_url(self, base_url,keyword, callback, cookies, headers):
         page = NUMBER_START
         while page <= NUMBER_END:
-            s = ((page + 1) / 2 - 1) * 60 + 1
-                ##psort=3，是根据销量排序
-            page_url = base_url + '&psort=3&page=' + str(page) + '&s=' + str(s) + '&click=0'
-            page += 2
-            self.crawl(page_url,headers = headers ,cookies=cookies, callback=callback, fetch_type='js', save={"category":keyword, 'keyword':keyword, "page":page });
+            p = 2 * page -1
+            s = (page - 1) * 60 + 1
+            ##psort=3，是根据销量排序
+            page_url = base_url + '&psort=3&page=' + str(p) + '&s=' + str(s) + '&click=0'
+            page += 1
+            self.crawl(page_url,headers = headers ,cookies=cookies, callback=callback, fetch_type='js', save={"category":keyword, 'keyword':keyword, "page":p });
 
     @every(minutes= 60 * 24)
     def on_start(self):
